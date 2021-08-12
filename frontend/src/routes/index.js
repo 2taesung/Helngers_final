@@ -1,12 +1,13 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import Main from './Main'
-import Home from './Home'
+import Main from '../components/Main/Main'
+import Home from '../components/Home/Home'
 import Login from './Login'
-import BadgeNow from './BadgeNow'
-import MuscleArticleList from './MuscleArticleList'
-import MyPage from './MyPage'
-import Challenge from './Challenge'
+import Medal from '../components/Medal/Medal'
+import MuscleArticle from '../components/MuscleArticle/MuscleArticle'
+import MyPage from '../components/MyPage/MyPage'
+import Challenge from '../components/Challenge/Challenge'
 import SignUp from './SignUp'
+import SingleArticle from '../components/MuscleArticle/SingleArticle'
 
 export default createRouter({
   // Hash 모드, 모든 주소 앞에 #붙음
@@ -29,12 +30,12 @@ export default createRouter({
       component: Login
     },
     {
-      path: '/badgenow',
-      component: BadgeNow
+      path: '/medal',
+      component: Medal
     },
     {
-      path: '/musclearticlelist',
-      component: MuscleArticleList
+      path: '/musclearticle',
+      component: MuscleArticle
     },
     {
       path: '/mypage',
@@ -47,6 +48,10 @@ export default createRouter({
     {
       path: '/signup',
       component: SignUp
+    },
+    {
+      path: '/singlearticle',
+      component: SingleArticle
     }
   ]
 })

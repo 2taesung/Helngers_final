@@ -1,10 +1,13 @@
 package com.ssafy.hellingers.controller;
 
+import com.ssafy.hellingers.dto.FollowDto;
 import com.ssafy.hellingers.dto.UserDto;
 import com.ssafy.hellingers.model.Role;
 import com.ssafy.hellingers.model.User;
 import com.ssafy.hellingers.service.EmailService;
-import com.ssafy.hellingers.service.IUserService;
+import com.ssafy.hellingers.service.FollowServiceImpl;
+import com.ssafy.hellingers.service.UserService;
+import com.ssafy.hellingers.service.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,48 +16,69 @@ import org.springframework.web.bind.annotation.*;
 import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
-import java.security.Principal;
+import java.util.*;
 
 
 @RestController
 //따라서 엔드포인트에 도달하려면 api/user/**가 될 수 있습니다.
-@RequestMapping("api/user")
+@RequestMapping("/")
 public class UserController
 {
+    @Autowired
+    private FollowServiceImpl followsvc;
+
     @Autowired
     private EmailService emailService;
 
     @Autowired
-    private IUserService userService;
+    private UserService userService;
+
+    @Autowired
+    JwtService jwtService;
+
+    // 운동 경력이 들어가는 API (POST)
+    // 운동 목적이 들어가는 API (POST)
+
 
     //POST http://localhost:8080/api/user -data {user form}
-    @PostMapping
+    @PostMapping("/signup")
     public ResponseEntity<?> register(@RequestBody @Valid UserDto user) //@Valid provides validation check
     {
-        if (userService.findByUsername(user.getUsername()) != null)
-        {
-            //Username 은 유니크해야
-            return new ResponseEntity<>(HttpStatus.CONFLICT);//409
+        if(userService.findByEmail(user.getEmail()) != null) {
+
+            // Email 은 유니크해야
+            return new ResponseEntity<>("EMAIL_ERROR",HttpStatus.CONFLICT);//409
+        }
+        if (userService.findByNickname(user.getNickname()) != null) {
+
+            //Nickname은 유니크해야
+            return new ResponseEntity<>("NICKNAME_ERROR", HttpStatus.CONFLICT);//409
         }
         //dto를 모델 객체로 변환한 다음 서비스와 함께 저장합니다.
         userService.saveUser(user.convertToUser());
-        return new ResponseEntity<>(user, HttpStatus.CREATED);
+
+        String temp = user.getEmail();
+        System.out.println(temp);
+        User returnUser =  userService.findByEmail(temp);
+
+        return new ResponseEntity<>(returnUser, HttpStatus.CREATED);
     }
 
-    //GET http://localhost:8080/api/user/login -> 앞에서 설명한 보안 로그인 경로와 동일해야 합니다.
-    //이것은 로그아웃 경로에도 사용됩니다. 로그 아웃 후 -> Spring은 로그인 경로로 리디렉션합니다.
-    @GetMapping("/login")
-    public ResponseEntity<?> login(HttpServletRequest request) //We can take it like also; Principal principal
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody User user, HttpServletRequest request) //We can take it like also; Principal principal
     {
-        //인증 정보는 Spring Security의 요청에 따라 저장됩니다.
-        Principal principal = request.getUserPrincipal();
-        if (principal == null || principal.getName() == null)
-        {
-            //여기에 로그아웃 리디렉션도 있으므로 OK로 간주합니다. httpStatus -> 오류가 없습니다.
-            return new ResponseEntity<>(HttpStatus.OK);
+        try {
+            Optional<User> loginUser = userService.login(user.getEmail(), user.getPassword());
+            String jwt = jwtService.create("email", user.getEmail(), "access_token");
+            return new ResponseEntity<>(jwt, HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        User user = userService.findByUsername(principal.getName());
-        return new ResponseEntity<>(user, HttpStatus.OK);
+        return new ResponseEntity<>("ID_OR_PASSWORD_WRONG", HttpStatus.NOT_FOUND);
+
+        // 이메일 비밀번호 검증 과정
+
     }
 
     //PUT http://localhost:8080/api/user/{username}/change/{role}
@@ -105,4 +129,80 @@ public class UserController
         emailService.sendMail(email, "[Helngers] 이메일 인증 요청", emailcontent.toString());
         System.out.println("이메일 보냄!");
     }
+
+    @PostMapping(value ="follow")
+    public FollowDto follow(@RequestBody FollowDto followDto) throws Exception {
+        int from_id = followDto.getFrom_id();
+        int to_id = followDto.getTo_id();
+
+        System.out.println("****잘 돌아가는지 확인용, from_id:" + from_id);
+        System.out.println("****잘 돌아가는지 확인용, to_id:" + to_id);
+        // 맞팔을 했는지 체크.(맞팔을 안했음 0이 나올 것)
+        int check = followsvc.checkFollows(followDto);
+        System.out.println("****잘 돌아가는지 확인용(check값):" + check);
+        if(check>0){ // 상대가 나를 팔로우 하고 있다면,
+            // follows = 1로 들어갈 것.
+            followsvc.willFollows(followDto);
+
+            // 상대의 기존 follows 상태도 1로 변경해줘야함.
+            followsvc.updateFollows(followDto);
+
+            followDto.setFollows(true);
+
+        }else{ // 상대가 나를 팔로우 한 상태가 아닐 때,
+            followsvc.onewayFollows(followDto);
+        }
+
+        System.out.println("****return 되는 dto 확인확인!!!:"+followDto.toString());
+        return followDto;
+    }
+
+
+    // 내가(유저) 팔로우를 취소.
+    @PostMapping(value = "unfollow")
+    public FollowDto unfollow(@RequestBody FollowDto followDto) throws Exception{
+        int from_id = followDto.getFrom_id();
+        int to_id = followDto.getTo_id();
+
+        System.out.println("****잘 돌아가는지 확인용, from_id:" + from_id);
+        System.out.println("****잘 돌아가는지 확인용, to_id:" + to_id);
+
+        int check = followsvc.checkFollows(followDto);
+
+        System.out.println("****잘 돌아가는지 확인용, check:" + check);
+
+        // 만약 서로 맞팔 상태라면 check = 1(true)이 들어가 있을 것.
+        if(check>0){ // 맞팔인데 팔로우 끊으면,
+            // 나는 삭제가 되고, 상대는 맞팔 처리가 되어있을 것이므로 수정해준다.
+            followsvc.deleteFollows(followDto);
+            System.out.println("둘이 맞팔상태였음! delete로직 돌아가는 중...");
+        }
+        followsvc.unfollow(followDto);
+
+        System.out.println("****return 되는 dto 확인확인!!!:"+followDto.toString());
+        return followDto;
+    }
+
+    // 팔로잉 리스트
+    @PostMapping(value = "following/{from_id}")
+    public List<FollowDto> following(@PathVariable int from_id) throws Exception{
+        System.out.println("****from_id:"+from_id);
+
+        List<FollowDto> following = new ArrayList<>();
+
+        following = followsvc.followingList(from_id);
+
+        return following;
+    }
+
+    // 팔로워 리스트
+    @PostMapping(value = "follower/{to_id}")
+    public List<FollowDto> follower(@PathVariable int to_id) throws Exception{
+        System.out.println("****to_id:"+to_id);
+        List<FollowDto> follower = new ArrayList<>();
+        follower = followsvc.followerList(to_id);
+
+        return follower;
+    }
+
 }

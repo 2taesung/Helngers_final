@@ -1,6 +1,8 @@
 <template>
   <div class="background">
     <div
+      data-aos="zoom-in"
+      data-aos-duration="1000"
       class="user"
       id="login">
       <div
@@ -9,19 +11,19 @@
           <Logo class="Logo" />
           <div class="input-with-label">
             <label
-              for="email">이메일&nbsp;&nbsp;</label>
+              for="email">email&nbsp;</label>
             <input
-              v-model="email"
+              v-model="formData.email"
               id="email"
-              placeholder="이메일을 입력하세요"
+              placeholder="email을 입력하세요"
               type="text" />
             <div clss="error-text"></div>
           </div>
           <div class="input-with-label">
             <label
-              for="password">비밀번호</label>
+              for="password">비밀번호&nbsp;&nbsp;&nbsp;&nbsp;</label>
             <input
-              v-model="password"
+              v-model="formData.password"
               id="password"
               placeholder="비밀번호를 입력하세요"
               type="password" />
@@ -29,7 +31,8 @@
           </div>
           <div class="button-div">
             <button
-              class="btn btn-primary">
+              class="btn btn-primary"
+              @click="login">
               LOGIN
             </button>
             <button
@@ -62,19 +65,44 @@
 </template>
 
 <script>
+import AOS from 'aos'
 import Logo from '../components/Logo'
+import UserService from '../services/user.service'
+import User from '../models/user'
+import vuex from 'vuex'
 
 export default {
+  created() {
+    AOS.init()
+  },
   components: {
     Logo,
   },
   data() {
     return {
-      email: "",
-      password: "",
+      formData: new User('', ''),
     }
   },
   methods: {
+    ...vuex.mapActions(['updateUser']),
+    login() {
+      console.log('로긴 누른 state')
+      console.log(this.$store.state)
+      UserService.login(this.formData).then(
+        response => {
+          // console.log(response)
+          console.log(response.data)
+          console.log('id')
+          console.log(response.data.id)
+          console.log(this.$store.state)
+          console.log('업데이트 전')
+
+          this.updateUser(response.data)
+        },
+        // response.data.password = this.FormData.password
+        console.log('로긴')
+      )
+    },
     toSignup() {
       this.$router.push('/signup')
     }
@@ -83,6 +111,32 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@include media-breakpoint-down(md) {
+  .background {
+    .user {
+      .for-sns {
+        width: 80% !important;
+        .form-wrap {
+          width: 80% !important;
+          margin: auto !important;
+        }
+      }
+    }
+  }
+}
+@include media-breakpoint-down(sm) {
+  .background {
+    .user {
+      .for-sns {
+        width: 80% !important;
+        .form-wrap {
+          width: 80% !important;
+          margin: auto !important;
+        }
+      }
+    }
+  }
+}
 .background {
     height: 800px;
     background-color: rgb(255,219,89, .73);

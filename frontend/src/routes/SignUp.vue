@@ -1,6 +1,8 @@
 <template>
   <div class="background">
     <div
+      data-aos="zoom-in"
+      data-aos-duration="1000"
       class="user"
       id="login">
       <div
@@ -9,44 +11,45 @@
           <Logo class="Logo" />
           <div class="input-with-label">
             <label
-              for="nickName">닉네임&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+              for="nickName">nickname&nbsp;&nbsp;</label>
             <input
-              v-model="nickName"
-              placeholder="닉네임을 입력하세요."
+              v-model="formData.nickname"
+              placeholder="nickname을 입력하세요."
               type="text" />
             <div clss="error-text"></div>
           </div>
           <div class="input-with-label">
             <label
-              for="email">이메일&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+              for="email">email&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
             <input
-              v-model="email"
-              placeholder="이메일을 입력하세요"
+              v-model="formData.email"
+              placeholder="email을 입력하세요"
               type="text" />
             <div clss="error-text"></div>
           </div>
           <div class="input-with-label">
             <label
-              for="email">비밀번호&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+              for="password">password&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
             <input
-              v-model="password"
-              placeholder="비밀번호를 입력하세요"
+              v-model="formData.password"
+              placeholder="password를 입력하세요"
               type="text" />
             <div clss="error-text"></div>
           </div>
           <div class="input-with-label">
             <label
-              for="password">비밀번호 확인</label>
+              for="introduce">introduce</label>
             <input
-              v-model="password"
-              placeholder="비밀번호를 입력하세요"
-              type="password" />
+              v-model="formData.introduce"
+              placeholder="introduce를 입력하세요"
+              type="text" />
             <div clss="error-text"></div>
           </div>
           <div class="button-div">
             <button
               class="btn btn-primary"
-              @click="toSignup">
+              @click="Signup"
+              :disabled="loading">
               SIGN UP
             </button>
           </div>
@@ -74,27 +77,70 @@
 </template>
 
 <script>
+import AOS from 'aos'
+import UserService from '../services/user.service';
+import User from '../models/user';
 import Logo from '../components/Logo'
+// import axios from 'axios'
+// import vuex from 'vuex'
 
 export default {
+  created() {
+    AOS.init()
+  },
   components: {
     Logo,
   },
   data() {
     return {
-      email: "",
-      password: "",
+        formData: new User('', '', '', ''),
+        loading: false,
+        submitted: false,
     }
   },
   methods: {
-    toSignup() {
-      this.$router.push('/signup')
+    Signup() {
+      UserService.signUp(this.formData).then(
+        () => {
+          console.log('요청')
+          this.$router.push('/login')
+        },
+
+      ).then(() => {
+        this.loading = false
+      })
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
+@include media-breakpoint-down(md) {
+  .background {
+    .user {
+      .for-sns {
+        width: 80% !important;
+        .form-wrap {
+          width: 80% !important;
+          margin: 30px auto !important;
+        }
+      }
+    }
+  }
+}
+@include media-breakpoint-down(sm) {
+  .background {
+    .user {
+      .for-sns {
+        width: 80% !important;
+        .form-wrap {
+          width: 80% !important;
+          margin: 30px auto !important;
+        }
+      }
+    }
+  }
+}
 .background {
     height: 800px;
     background-color: rgb(255,219,89, .73);
