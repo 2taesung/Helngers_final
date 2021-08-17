@@ -26,7 +26,13 @@
         class="subtitle"
         data-aos="fade-right"
         data-aos-duration="1000">
-        <h3>OOO 님이 운동하는 동안.. </h3>
+        <h3 v-if="userInfo">
+          {{ userInfo.first_name }}
+        </h3>
+        <h3 v-if="userInfo === null">
+          OOO
+        </h3>
+        <h3>님이 운동하는 동안.. </h3>
       </div>
       <div
         class="search push"
@@ -102,6 +108,8 @@ import CreateMyArticle from './CreateMyArticle'
 import MyArticleDetail from './MyArticleDetail'
 import AOS from 'aos'
 
+import { mapState } from "vuex"
+
 export default {
   created() {
     AOS.init()
@@ -117,6 +125,9 @@ export default {
       isDetailOn: false,
       scrollY : 0
     }
+  },
+  computed: {
+    ...mapState("user", ["userInfo"])
   },
   methods: {
     searchFocus() {
@@ -171,6 +182,7 @@ export default {
 .subtitle {
   margin: 3px auto !important;
   justify-content: center !important;
+
 }
 .search {
   margin: 3px auto !important;
@@ -256,6 +268,7 @@ export default {
     margin: 100px 20%;
     .subtitle {
       min-width: 280px;
+      display: flex;
       h3 {
         margin: 5px 0px;
       }
